@@ -147,7 +147,27 @@ local function removeEsp(player)
     cache[player] = nil
 end
 
+-- Added: function to globally remove all tracers, called when tracers are turned off
+local function removeAllTracers()
+    for _, esp in pairs(cache) do
+        if esp.tracer then
+            safeRemove(esp.tracer)
+            esp.tracer = create("Line", {
+                Thickness = ESP_SETTINGS.TracerThickness,
+                Color = ESP_SETTINGS.TracerColor,
+                Transparency = 1,
+                Visible = false
+            })
+        end
+    end
+end
+
 local function updateEsp()
+    -- Fix: if tracers are disabled, also forcibly remove all tracer lines so none remain visible/stuck
+    if not ESP_SETTINGS.ShowTracer or not ESP_SETTINGS.Enabled then
+        removeAllTracers()
+    end
+
     for player, esp in pairs(cache) do
         local character, team = player.Character, player.Team
         if character and (not ESP_SETTINGS.Teamcheck or (team and team ~= localPlayer.Team)) then
@@ -311,12 +331,23 @@ local function updateEsp()
 
                     -- Tracer
                     if ESP_SETTINGS.ShowTracer and ESP_SETTINGS.Enabled then
+                        -- fix: ensure tracer is not stuck; if it's missing (removed), recreate
+                        if not esp.tracer or type(esp.tracer) ~= "userdata" or not esp.tracer.Remove then
+                            esp.tracer = create("Line", {
+                                Thickness = ESP_SETTINGS.TracerThickness,
+                                Color = ESP_SETTINGS.TracerColor,
+                                Transparency = 1,
+                                Visible = false
+                            })
+                        end
                         esp.tracer.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
                         esp.tracer.To = Vector2.new(hrp2D.X, hrp2D.Y)
                         esp.tracer.Color = ESP_SETTINGS.TracerColor
                         esp.tracer.Visible = true
                     else
-                        esp.tracer.Visible = false
+                        if esp.tracer then
+                            esp.tracer.Visible = false
+                        end
                     end
 
                     -- Skeleton
@@ -361,7 +392,9 @@ local function updateEsp()
                     esp.health.Visible = false
                     esp.healthOutline.Visible = false
                     esp.distance.Visible = false
-                    esp.tracer.Visible = false
+                    if esp.tracer then
+                        esp.tracer.Visible = false
+                    end
                     for _, line in ipairs(esp.boxLines) do
                         line.Visible = false
                     end
@@ -378,7 +411,9 @@ local function updateEsp()
                 esp.health.Visible = false
                 esp.healthOutline.Visible = false
                 esp.distance.Visible = false
-                esp.tracer.Visible = false
+                if esp.tracer then
+                    esp.tracer.Visible = false
+                end
                 for _, line in ipairs(esp.boxLines) do
                     line.Visible = false
                 end
@@ -395,7 +430,9 @@ local function updateEsp()
             esp.health.Visible = false
             esp.healthOutline.Visible = false
             esp.distance.Visible = false
-            esp.tracer.Visible = false
+            if esp.tracer then
+                esp.tracer.Visible = false
+            end
             for _, line in ipairs(esp.boxLines) do
                 line.Visible = false
             end
